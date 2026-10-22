@@ -58,3 +58,4 @@ Le guide complet (création de la clé API, alimentation du compte, automatisati
 ---
 
 *Projet personnel d'apprentissage. Ce n'est pas un conseil financier : les cryptomonnaies sont très volatiles.*
+*Développé avec l'aide de Claude (IA d'Anthropic). J'ai étudié et compris chaque partie du code, et je peux en expliquer le fonctionnement.*
