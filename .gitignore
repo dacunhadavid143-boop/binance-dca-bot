@@ -1,0 +1,22 @@
+# Secrets : ne JAMAIS publier
+.env
+*.env
+!.env.example
+
+# Données personnelles produites par le bot
+state.json
+state_simulation.json
+journal.csv
+history.csv
+logs/
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Système
+.DS_Store
+Thumbs.db

@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DCA Bot</title>
+<style>
+  :root {
+    --bg: #0b0e13; --surface: #12161d; --surface2: #181d26; --border: #232a35;
+    --text: #e7eaee; --muted: #8a93a3; --faint: #5b6473;
+    --accent: #e8b931; --green: #3fb97a; --red: #ef5b5b; --amber: #e8a531; --blue: #5b8def;
+    --btc: #f2a33a; --eth: #8c9eff;
+    --radius: 14px;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 24px 60px; }
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 18px; letter-spacing: .2px; }
+  .logo-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), #c4851a);
+    display: grid; place-items: center; color: #1a1300; font-weight: 800; font-size: 15px; }
+  .badge { font-size: 11px; font-weight: 700; letter-spacing: .6px; padding: 4px 9px; border-radius: 99px; text-transform: uppercase; }
+  .badge.sim { background: rgba(232,165,49,.14); color: var(--amber); border: 1px solid rgba(232,165,49,.35); }
+  .badge.real { background: rgba(63,185,122,.14); color: var(--green); border: 1px solid rgba(63,185,122,.35); }
+  .spacer { flex: 1; }
+  .sub { color: var(--muted); font-size: 12.5px; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text); padding: 9px 15px; font-weight: 550; transition: background .15s, border-color .15s, opacity .15s; }
+  button:hover { border-color: #344052; background: #1d2330; }
+  button.primary { background: var(--accent); color: #1a1300; border-color: var(--accent); }
+  button.primary:hover { background: #f2c548; }
+  button.danger { color: var(--red); }
+  button:disabled { opacity: .5; cursor: wait; }
+  nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  nav button { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 14px; color: var(--muted); }
+  nav button.on { color: var(--text); border-bottom-color: var(--accent); }
+  nav button:hover { background: none; color: var(--text); }
+  .grid { display: grid; gap: 16px; }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g2 { grid-template-columns: 1.3fr 1fr; }
+  .g2e { grid-template-columns: 1fr 1fr; align-items: start; }
+  @media (max-width: 900px) { .g4 { grid-template-columns: 1fr 1fr; } .g2, .g2e { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .card h3 { margin: 0 0 14px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; }
+  .stat .label { color: var(--muted); font-size: 12.5px; margin-bottom: 6px; }
+  .stat .value { font-size: 26px; font-weight: 650; letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
+  .stat .value small { font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .stat .hint { color: var(--faint); font-size: 12px; margin-top: 4px; }
+  .progress { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), #f5d36a); border-radius: 99px; transition: width .6s; }
+  .alloc-row { margin-bottom: 18px; }
+  .alloc-row:last-child { margin-bottom: 4px; }
+  .alloc-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .alloc-name { display: flex; align-items: center; gap: 9px; font-weight: 600; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .alloc-num { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+  .alloc-num b { color: var(--text); font-weight: 600; }
+  .bar { position: relative; height: 10px; background: var(--surface2); border-radius: 99px; }
+  .bar > .fill { height: 100%; border-radius: 99px; transition: width .6s; }
+  .bar > .target { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--text); opacity: .75; border-radius: 2px; }
+  .zone { position: absolute; top: 0; height: 100%; background: rgba(255,255,255,.06); border-radius: 99px; }
+  .legend { display: flex; gap: 14px; color: var(--faint); font-size: 12px; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 550; font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 1px solid #1a2029; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  .tag { font-size: 11px; font-weight: 650; padding: 2px 7px; border-radius: 6px; }
+  .tag.buy { background: rgba(63,185,122,.13); color: var(--green); }
+  .tag.sell { background: rgba(239,91,91,.13); color: var(--red); }
+  .tag.sim { background: rgba(232,165,49,.12); color: var(--amber); }
+  .empty { color: var(--faint); padding: 22px 0; text-align: center; }
+  .logs { background: #080a0e; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 12px; line-height: 1.6; max-height: 420px; overflow: auto; white-space: pre-wrap; color: #b4bcc8; }
+  .logs .err { color: var(--red); } .logs .warn { color: var(--amber); }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } }
+  .step { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 11px; background: var(--surface2); border: 1px solid var(--border); }
+  .step .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: none; }
+  .step.done .ic { background: rgba(63,185,122,.18); color: var(--green); }
+  .step.todo .ic { background: rgba(232,185,49,.16); color: var(--accent); }
+  .step .t { font-weight: 600; font-size: 13px; } .step .d { color: var(--muted); font-size: 12px; }
+  .step.todo { cursor: pointer; } .step.todo:hover { border-color: #3a4352; }
+  form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  label { display: block; color: var(--muted); font-size: 12.5px; margin-bottom: 5px; }
+  input { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; }
+  input:focus { outline: none; border-color: var(--accent); }
+  .help { color: var(--faint); font-size: 12px; margin-top: 4px; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: 11px; background: var(--surface2); margin-bottom: 14px; }
+  .toggle { position: relative; width: 44px; height: 24px; flex: none; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle span { position: absolute; inset: 0; background: #2a313d; border-radius: 99px; transition: .2s; cursor: pointer; }
+  .toggle span::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .toggle input:checked + span { background: var(--green); }
+  .toggle input:checked + span::before { transform: translateX(20px); }
+  .checklist { list-style: none; padding: 0; margin: 0 0 14px; }
+  .checklist li { padding: 5px 0; color: var(--muted); font-size: 13px; }
+  .checklist b { color: var(--text); font-weight: 600; }
+  .ok { color: var(--green); } .no { color: var(--red); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toast-box { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 50; max-width: 420px; }
+  .toast { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 10px; padding: 12px 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4); font-size: 13px; animation: slide .25s ease; white-space: pre-wrap; }
+  .toast.bad { border-left-color: var(--red); }
+  @keyframes slide { from { transform: translateY(10px); opacity: 0; } }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; place-items: center; z-index: 60; }
+  .modal-bg.on { display: grid; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 440px; }
+  .modal h2 { margin: 0 0 10px; font-size: 18px; }
+  .modal p { color: var(--muted); margin: 0 0 18px; }
+  .notice { padding: 12px 14px; border-radius: 11px; margin-bottom: 16px; font-size: 13px; border: 1px solid; }
+  .notice.warn { background: rgba(232,165,49,.08); border-color: rgba(232,165,49,.3); color: #f0c674; }
+  .notice.bad { background: rgba(239,91,91,.08); border-color: rgba(239,91,91,.3); color: #f39c9c; }
+  svg text { fill: var(--faint); font-size: 11px; }
+  .hidden { display: none !important; }
+  .foot { color: var(--faint); font-size: 12px; text-align: center; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><div class="logo-mark">₿</div>DCA Bot</div>
+    <span id="modeBadge" class="badge sim">Simulation</span>
+    <div class="spacer"></div>
+    <div class="sub" id="lastRun">—</div>
+    <button id="btnCheck">Vérifier</button>
+    <button id="btnRun" class="primary">Lancer maintenant</button>
+  </header>
+
+  <nav>
+    <button data-tab="home" class="on">Tableau de bord</button>
+    <button data-tab="activity">Activité</button>
+    <button data-tab="settings">Réglages</button>
+  </nav>
+
+  <!-- ===================== ACCUEIL ===================== -->
+  <section id="tab-home">
+    <div id="setup" class="card" style="margin-bottom:16px">
+      <h3>Mise en route</h3>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div id="portfolioError" class="notice bad hidden"></div>
+
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card stat"><div class="label">Valeur des cryptos</div><div class="value" id="sTotal">—</div><div class="hint" id="sTotalHint">&nbsp;</div></div>
+      <div class="card stat"><div class="label">Liquidités disponibles</div><div class="value" id="sCash">—</div><div class="hint" id="sCashHint">&nbsp;</div></div>
+      <div class="card stat"><div class="label">Prochain achat</div><div class="value" id="sNext" style="font-size:20px">—</div><div class="hint" id="sNextHint">&nbsp;</div></div>
+      <div class="card stat"><div class="label">Objectif</div><div class="value" id="sGoal">—</div><div class="progress"><div id="goalBar" style="width:0"></div></div></div>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card">
+        <h3>Évolution du portefeuille</h3>
+        <div id="chart"></div>
+      </div>
+      <div class="card">
+        <h3>Répartition</h3>
+        <div id="alloc"></div>
+        <div class="legend"><span>▌ cible</span><span>zone grise = tolérance avant rééquilibrage</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Dernières transactions</h3>
+      <div id="recentTx"></div>
+    </div>
+  </section>
+
+  <!-- ===================== ACTIVITE ===================== -->
+  <section id="tab-activity" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <h3>Toutes les transactions</h3>
+      <div id="allTx"></div>
+    </div>
+    <div class="card">
+      <h3 style="display:flex;justify-content:space-between;align-items:center">Journal d'activité
+        <button id="btnLogs" style="padding:5px 10px;font-size:12px;text-transform:none;letter-spacing:0">Actualiser</button></h3>
+      <div class="logs" id="logs"></div>
+    </div>
+  </section>
+
+  <!-- ===================== REGLAGES ===================== -->
+  <section id="tab-settings" class="hidden">
+    <div class="grid g2e">
+      <div class="card">
+        <h3>Stratégie</h3>
+        <div class="switch">
+          <div><div style="font-weight:600">Mode réel</div><div class="help" style="margin:0" id="modeHelp"></div></div>
+          <label class="toggle" style="margin:0"><input type="checkbox" id="realToggle"><span></span></label>
+        </div>
+        <form id="cfgForm">
+          <div class="row">
+            <div><label>Montant par mois (<span class="q"></span>)</label><input type="number" step="1" min="5" name="monthly_budget"></div>
+            <div><label>Jour d'achat dans le mois</label><input type="number" min="1" max="28" name="buy_day"></div>
+          </div>
+          <div class="row" id="allocInputs"></div>
+          <div class="row">
+            <div><label>Tolérance avant rééquilibrage (points)</label><input type="number" min="2" max="50" step="1" name="rebalance_threshold"></div>
+            <div><label>Objectif d'alerte (<span class="q"></span>)</label><input type="number" min="0" step="50" name="goal_value"></div>
+          </div>
+          <div class="help" style="margin-bottom:12px">Le total de la répartition doit faire 100 %. Les montants sont en <span class="q"></span>.</div>
+          <button class="primary" type="submit">Enregistrer</button>
+        </form>
+      </div>
+
+      <div class="grid" style="align-content:start">
+        <div class="card">
+          <h3>Automatisation</h3>
+          <div id="schedInfo" class="sub" style="margin-bottom:12px"></div>
+          <div class="actions">
+            <button id="btnSchedOn" class="primary">Activer</button>
+            <button id="btnSchedOff" class="danger">Désactiver</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Clé API Binance</h3>
+          <ul class="checklist">
+            <li>Sur Binance : Profil → <b>Gestion des API</b> → Créer</li>
+            <li><span class="ok">✓</span> Lecture &nbsp; <span class="ok">✓</span> Trading Spot</li>
+            <li><span class="no">✕</span> <b>Retraits désactivés</b> (sinon le bot refuse de tourner)</li>
+            <li><span class="ok">✓</span> Limiter à l'adresse IP de cette machine</li>
+          </ul>
+          <form id="keyForm">
+            <div style="margin-bottom:10px"><label>API Key <span id="keyHint" class="sub"></span></label><input name="api_key" autocomplete="off" placeholder="Colle ta clé ici"></div>
+            <div style="margin-bottom:12px"><label>Secret Key</label><input name="api_secret" type="password" autocomplete="off" placeholder="Colle le secret ici"></div>
+            <button class="primary" type="submit">Enregistrer la clé</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Notifications Telegram <span class="sub" id="tgState" style="text-transform:none;letter-spacing:0"></span></h3>
+          <form id="tgForm">
+            <div class="row">
+              <div><label>Token du bot</label><input name="telegram_token" autocomplete="off" placeholder="via @BotFather"></div>
+              <div><label>Chat ID</label><input name="telegram_chat" autocomplete="off"></div>
+            </div>
+            <div class="actions"><button type="submit">Enregistrer</button><button type="button" id="btnTgTest">Envoyer un test</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">Ceci n'est pas un conseil financier. Le bot ne peut jamais retirer d'argent de ton compte.</div>
+</div>
+
+<div class="toast-box" id="toasts"></div>
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h2>Passer en mode réel ?</h2>
+    <p>Le bot passera de vrais ordres d'achat et de vente sur ton compte Binance, avec ton argent. Vérifie d'abord que la simulation te convient.</p>
+    <div class="actions" style="justify-content:flex-end">
+      <button id="modalNo">Annuler</button>
+      <button id="modalYes" class="primary">Oui, passer en réel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const COLORS = { BTC: "var(--btc)", ETH: "var(--eth)" };
+let OV = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (n, d = 2) => n == null || isNaN(n) ? "—" : Number(n).toLocaleString("fr-CH", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtDate = s => { if (!s) return "—"; if (!/^\d{4}-/.test(s)) return s; const d = new Date(s.length <= 10 ? s + "T00:00" : s);
+  return d.toLocaleDateString("fr-CH", { day: "numeric", month: "long" }) + (s.length > 10 ? " à " + d.toLocaleTimeString("fr-CH", { hour: "2-digit", minute: "2-digit" }) : ""); };
+
+async function get(path) { const r = await fetch(path); return r.json(); }
+async function post(path, body = {}) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Token": TOKEN }, body: JSON.stringify(body) });
+  return r.json();
+}
+function toast(msg, ok = true) {
+  const el = document.createElement("div");
+  el.className = "toast" + (ok ? "" : " bad"); el.textContent = msg;
+  $("#toasts").appendChild(el); setTimeout(() => el.remove(), ok ? 5000 : 9000);
+}
+async function busy(btn, fn) { btn.disabled = true; try { await fn(); } finally { btn.disabled = false; } }
+
+// ---------- navigation ----------
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  ["home", "activity", "settings"].forEach(x => $("#tab-" + x).classList.toggle("hidden", x !== t));
+  if (t === "activity") { loadJournal(); loadLogs(); }
+}
+
+// ---------- chargement ----------
+async function loadOverview() {
+  OV = await get("/api/overview");
+  if (OV.error) { toast(OV.error, false); return; }
+  const c = OV.config, q = c.quote_asset, p = OV.portfolio, real = OV.mode === "REEL";
+  document.querySelectorAll(".q").forEach(e => e.textContent = q);
+
+  $("#modeBadge").className = "badge " + (real ? "real" : "sim");
+  $("#modeBadge").textContent = real ? "Réel" : "Simulation";
+  $("#lastRun").textContent = OV.state.last_run ? "Dernière exécution : " + fmtDate(OV.state.last_run) : "Jamais exécuté";
+
+  // Étapes de mise en route
+  const steps = [
+    { done: OV.keys.configured, t: "Clé API", d: OV.keys.configured ? "Enregistrée " + OV.keys.hint : "À ajouter", go: "settings" },
+    { done: p.ok, t: "Connexion Binance", d: p.ok ? "OK" : "Pas encore vérifiée", go: "settings" },
+    { done: OV.schedule.installed, t: "Automatisation", d: OV.schedule.installed ? "Active" : (OV.schedule.supported ? "À activer" : "Windows uniquement"), go: "settings" },
+    { done: real, t: "Mode réel", d: real ? "Activé" : "Simulation en cours", go: "settings" },
+  ];
+  $("#steps").innerHTML = steps.map((s, i) => `<div class="step ${s.done ? "done" : "todo"}" data-go="${s.go}">
+      <div class="ic">${s.done ? "✓" : i + 1}</div><div><div class="t">${s.t}</div><div class="d">${esc(s.d)}</div></div></div>`).join("");
+  document.querySelectorAll(".step.todo").forEach(e => e.onclick = () => showTab(e.dataset.go));
+  $("#setup").classList.toggle("hidden", steps.every(s => s.done));
+
+  // Portefeuille
+  $("#portfolioError").classList.toggle("hidden", p.ok);
+  if (!p.ok) $("#portfolioError").textContent = p.error || "Portefeuille indisponible.";
+  $("#sTotal").innerHTML = p.ok ? `${fmt(p.total)}<small>${q}</small>` : "—";
+  $("#sTotalHint").textContent = p.ok ? p.assets.map(a => `${a.asset} ${fmt(a.value)}`).join(" · ") : "";
+  $("#sCash").innerHTML = p.ok ? `${fmt(p.cash)}<small>${q}</small>` : "—";
+  $("#sCashHint").innerHTML = p.ok ? (p.cash >= c.monthly_budget ? `<span class="ok">Suffisant pour l'achat de ${fmt(c.monthly_budget, 0)}</span>`
+                                                                    : `<span style="color:var(--amber)">Dépose ${fmt(c.monthly_budget, 0)} ${q} avant l'achat</span>`) : "";
+  $("#sNext").textContent = fmtDate(OV.next_buy);
+  $("#sNextHint").textContent = `${fmt(c.monthly_budget, 0)} ${q} répartis automatiquement`;
+  const goal = c.goal_value || 0, pct = p.ok && goal ? Math.min(100, p.total / goal * 100) : 0;
+  $("#sGoal").innerHTML = goal ? `${fmt(pct, 0)} %<small>de ${fmt(goal, 0)}</small>` : "—";
+  $("#goalBar").style.width = pct + "%";
+
+  // Répartition
+  const th = c.rebalance_threshold;
+  $("#alloc").innerHTML = Object.entries(c.allocation).map(([a, t]) => {
+    const asset = p.ok ? p.assets.find(x => x.asset === a) : null, share = asset ? asset.share : 0;
+    const lo = Math.max(0, t - th) * 100, hi = Math.min(1, t + th) * 100;
+    return `<div class="alloc-row"><div class="alloc-head">
+        <div class="alloc-name"><span class="dot" style="background:${COLORS[a] || "var(--blue)"}"></span>${a}</div>
+        <div class="alloc-num"><b>${p.ok ? fmt(share * 100, 1) : "—"} %</b> / cible ${fmt(t * 100, 0)} %</div></div>
+      <div class="bar"><div class="zone" style="left:${lo}%;width:${hi - lo}%"></div>
+        <div class="fill" style="width:${share * 100}%;background:${COLORS[a] || "var(--blue)"}"></div>
+        <div class="target" style="left:calc(${t * 100}% - 1px)"></div></div>
+      ${asset ? `<div class="sub" style="margin-top:6px">${fmt(asset.qty, 6)} ${a} · prix ${fmt(asset.price)} ${q}</div>` : ""}</div>`;
+  }).join("");
+
+  // Réglages
+  const f = $("#cfgForm");
+  f.monthly_budget.value = c.monthly_budget; f.buy_day.value = c.buy_day;
+  f.rebalance_threshold.value = Math.round(th * 100); f.goal_value.value = c.goal_value;
+  $("#allocInputs").innerHTML = Object.entries(c.allocation).map(([a, t]) =>
+    `<div><label>Part ${a} (%)</label><input type="number" min="0" max="100" step="1" data-asset="${a}" value="${Math.round(t * 100)}"></div>`).join("");
+  $("#realToggle").checked = real;
+  $("#modeHelp").textContent = real ? "Le bot passe de vrais ordres." : "Simulation : aucun ordre réel n'est passé.";
+  $("#keyHint").textContent = OV.keys.configured ? `(actuelle : ${OV.keys.hint})` : "";
+  $("#tgState").textContent = OV.telegram ? "· configuré" : "· non configuré";
+  const s = OV.schedule;
+  $("#schedInfo").innerHTML = !s.supported ? "Disponible uniquement sous Windows."
+    : s.installed ? `<span class="ok">● Active</span> — le bot tourne chaque jour à 10h00.<br>Prochaine exécution : ${esc(s.next_run || "—")}`
+    : `<span style="color:var(--amber)">● Inactive</span> — le bot ne tourne que si tu cliques sur « Lancer maintenant ».`;
+  $("#btnSchedOn").classList.toggle("hidden", s.installed || !s.supported);
+  $("#btnSchedOff").classList.toggle("hidden", !s.installed);
+}
+
+function txTable(rows) {
+  if (!rows.length) return `<div class="empty">Aucune transaction pour l'instant.</div>`;
+  return `<table><thead><tr><th>Date</th><th>Type</th><th>Paire</th><th style="text-align:right">Quantité</th>
+    <th style="text-align:right">Montant</th><th style="text-align:right">Prix</th><th>Raison</th></tr></thead><tbody>` +
+    rows.slice().reverse().map(r => `<tr><td>${esc(fmtDate(r.date))}</td>
+      <td><span class="tag ${r.sens === "ACHAT" ? "buy" : "sell"}">${esc(r.sens)}</span>${r.mode === "SIMULATION" ? ' <span class="tag sim">SIMU</span>' : ""}</td>
+      <td>${esc(r.paire)}</td><td style="text-align:right">${fmt(r.quantite, 6)}</td><td style="text-align:right">${fmt(r.montant)}</td>
+      <td style="text-align:right">${fmt(r.prix)}</td><td class="sub">${esc(r.raison)}</td></tr>`).join("") + "</tbody></table>";
+}
+async function loadJournal() {
+  const { rows } = await get("/api/journal");
+  $("#recentTx").innerHTML = txTable(rows.slice(-6));
+  $("#allTx").innerHTML = txTable(rows);
+}
+async function loadLogs() {
+  const { lines } = await get("/api/logs");
+  $("#logs").innerHTML = lines.length ? lines.map(l => `<div class="${/ERROR/.test(l) ? "err" : /WARNING/.test(l) ? "warn" : ""}">${esc(l.trimEnd())}</div>`).join("")
+                                      : `<div class="empty">Aucune activité pour l'instant.</div>`;
+  $("#logs").scrollTop = 1e9;
+}
+async function loadHistory() {
+  const { rows } = await get("/api/history");
+  const el = $("#chart");
+  if (rows.length < 2) { el.innerHTML = `<div class="empty">Le graphique apparaîtra après quelques jours d'exécution.</div>`; return; }
+  const W = 640, H = 220, P = { l: 52, r: 10, t: 10, b: 26 };
+  const vals = rows.map(r => +r.total), max = Math.max(...vals) * 1.08 || 1, min = 0;
+  const x = i => P.l + i * (W - P.l - P.r) / (rows.length - 1), y = v => P.t + (1 - (v - min) / (max - min)) * (H - P.t - P.b);
+  const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const area = line + `L${x(vals.length - 1)},${y(0)}L${x(0)},${y(0)}Z`;
+  const ticks = [0, .25, .5, .75, 1].map(f => min + f * (max - min));
+  const lab = [0, Math.floor((rows.length - 1) / 2), rows.length - 1];
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8b931" stop-opacity=".28"/><stop offset="1" stop-color="#e8b931" stop-opacity="0"/></linearGradient></defs>
+    ${ticks.map(v => `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="#1d232d"/><text x="${P.l - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v, 0)}</text>`).join("")}
+    <path d="${area}" fill="url(#g)"/><path d="${line}" fill="none" stroke="#e8b931" stroke-width="2"/>
+    ${lab.map(i => `<text x="${x(i)}" y="${H - 6}" text-anchor="${i === 0 ? "start" : i === rows.length - 1 ? "end" : "middle"}">${esc(fmtDate(rows[i].date))}</text>`).join("")}
+  </svg>`;
+}
+async function refreshAll() { await loadOverview(); loadJournal(); loadHistory(); }
+
+// ---------- actions ----------
+function report(res, okMsg) {
+  const detail = (res.lines || []).filter(l => !/=====/.test(l)).slice(-6).join("\n");
+  if (res.ok) toast(okMsg + (detail ? "\n\n" + detail : ""));
+  else toast("Erreur : " + (res.error || "inconnue") + (detail ? "\n\n" + detail : ""), false);
+}
+$("#btnCheck").onclick = e => busy(e.target, async () => { report(await post("/api/check"), "Tout est en ordre."); refreshAll(); });
+$("#btnRun").onclick = e => busy(e.target, async () => { report(await post("/api/run"), "Exécution terminée."); refreshAll(); });
+$("#btnLogs").onclick = loadLogs;
+
+$("#cfgForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target, allocation = {};
+  document.querySelectorAll("#allocInputs input").forEach(i => allocation[i.dataset.asset] = +i.value);
+  const sum = Object.values(allocation).reduce((a, b) => a + b, 0);
+  if (Math.abs(sum - 100) > 0.01) return toast(`La répartition fait ${sum} %, elle doit faire 100 %.`, false);
+  const res = await post("/api/config", { monthly_budget: +f.monthly_budget.value, buy_day: +f.buy_day.value, allocation,
+    rebalance_threshold: +f.rebalance_threshold.value, goal_value: +f.goal_value.value });
+  res.ok ? toast("Réglages enregistrés.") : toast(res.error, false);
+  refreshAll();
+};
+$("#realToggle").onchange = async e => {
+  if (e.target.checked) { e.target.checked = false; $("#modal").classList.add("on"); return; }
+  const res = await post("/api/config", { dry_run: true });
+  res.ok ? toast("Retour en mode simulation.") : toast(res.error, false); refreshAll();
+};
+$("#modalNo").onclick = () => $("#modal").classList.remove("on");
+$("#modalYes").onclick = async () => {
+  $("#modal").classList.remove("on");
+  const res = await post("/api/config", { dry_run: false });
+  res.ok ? toast("Mode réel activé.") : toast(res.error, false); refreshAll();
+};
+$("#keyForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  if (!f.api_key.value || !f.api_secret.value) return toast("Remplis la clé et le secret.", false);
+  const res = await post("/api/keys", { api_key: f.api_key.value, api_secret: f.api_secret.value });
+  f.reset();
+  if (!res.ok) return toast(res.error, false);
+  toast("Clé enregistrée. Vérification en cours…");
+  report(await post("/api/check"), "Connexion réussie, la clé est sûre.");
+  refreshAll();
+};
+$("#tgForm").onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target;
+  const res = await post("/api/keys", { telegram_token: f.telegram_token.value, telegram_chat: f.telegram_chat.value });
+  f.reset(); res.ok ? toast("Telegram enregistré.") : toast(res.error, false); refreshAll();
+};
+$("#btnTgTest").onclick = async () => { const r = await post("/api/test-notification"); r.ok ? toast("Message de test envoyé.") : toast(r.error, false); };
+$("#btnSchedOn").onclick = e => busy(e.target, async () => { const r = await post("/api/schedule", { action: "install" }); r.ok ? toast("Automatisation activée.") : toast(r.error, false); refreshAll(); });
+$("#btnSchedOff").onclick = e => busy(e.target, async () => { const r = await post("/api/schedule", { action: "remove" }); r.ok ? toast("Automatisation désactivée.") : toast(r.error, false); refreshAll(); });
+
+refreshAll();
+setInterval(loadOverview, 60000);
+</script>
+</body>
+</html>

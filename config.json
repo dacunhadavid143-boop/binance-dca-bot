@@ -1,0 +1,16 @@
+{
+  "dry_run": true,
+  "quote_asset": "USDC",
+  "monthly_budget": 50,
+  "max_spend_per_run": 60,
+  "buy_day": 2,
+  "allocation": {
+    "BTC": 0.70,
+    "ETH": 0.30
+  },
+  "rebalance_threshold": 0.10,
+  "rebalance_cooldown_days": 30,
+  "min_portfolio_for_rebalance": 100,
+  "goal_value": 2000,
+  "base_url": "https://api.binance.com"
+}
